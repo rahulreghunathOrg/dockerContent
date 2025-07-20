@@ -5,15 +5,14 @@ pipeline {
     DOCKERHUB_USER = 'rahuldocker314'
     IMAGE_NAME     = 'mysite-image'
     REPO_URL       = 'https://github.com/rahulreghunathOrg/dockerContent.git'
-    SITE_FOLDER    = 'dockerContent'
-    SWARM_MANAGER  = 'tcp://18.227.46.132:2375'   
+    SWARM_MANAGER  = 'tcp://18.227.46.132:2375'
   }
 
+  stages {
     stage('Build Docker Image') {
       steps {
         script {
-          // Build with the correct site folder as context
-          docker.build("${IMAGE_NAME}", "./${SITE_FOLDER}")
+          docker.build("${IMAGE_NAME}", ".")  // Build from root directory
         }
       }
     }
@@ -46,10 +45,10 @@ pipeline {
 
   post {
     success {
-      echo " Web service deployed successfully to Docker Swarm"
+      echo "✅ Web service deployed successfully to Docker Swarm"
     }
     failure {
-      echo " Deployment failed. Please review logs and swarm state."
+      echo "❌ Deployment failed. Please review logs and swarm state."
     }
   }
 }
