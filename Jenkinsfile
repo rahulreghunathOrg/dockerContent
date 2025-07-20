@@ -4,7 +4,7 @@ pipeline {
   environment {
     DOCKERHUB_USER = 'rahuldocker314'
     IMAGE_NAME     = 'mysite-image'
-    REPO_URL       = 'https://github.com/rahulreghunathOrg/dockerContent.git'
+    FULL_IMAGE     = "${DOCKERHUB_USER}/${IMAGE_NAME}:latest"
     SWARM_MANAGER  = 'tcp://18.227.46.132:2375'
   }
 
@@ -12,7 +12,7 @@ pipeline {
     stage('Build Docker Image') {
       steps {
         script {
-          docker.build("${IMAGE_NAME}", ".")  // Build from root directory
+          docker.build("${FULL_IMAGE}", ".")
         }
       }
     }
@@ -21,7 +21,7 @@ pipeline {
       steps {
         withDockerRegistry([credentialsId: 'dockerhub-creds', url: '']) {
           script {
-            docker.image("${IMAGE_NAME}").push()
+            docker.image("${FULL_IMAGE}").push()
           }
         }
       }
@@ -29,7 +29,7 @@ pipeline {
 
     stage('Deploy to Docker Swarm') {
       steps {
-        sh '''
+        sh """
         docker -H ${SWARM_MANAGER} service rm webapp || true
 
         docker -H ${SWARM_MANAGER} service create \
@@ -37,8 +37,8 @@ pipeline {
           --replicas 3 \
           --publish 80:80 \
           --mount type=volume,source=mysite-data,target=/usr/local/apache2/htdocs \
-          ${DOCKERHUB_USER}/${IMAGE_NAME}:latest
-        '''
+          ${FULL_IMAGE}
+        """
       }
     }
   }
