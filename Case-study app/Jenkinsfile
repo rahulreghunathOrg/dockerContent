@@ -1,0 +1,62 @@
+pipeline {
+  agent any
+
+  environment {
+    DOCKERHUB_USER = 'rahuldocker314'
+    IMAGE_NAME     = 'mysite-image'
+    REPO_URL       = 'https://github.com/rahulreghunathOrg/dockerContent.git'
+    SITE_FOLDER    = 'dockerContent'
+    SWARM_MANAGER  = 'tcp://18.227.46.132:2375'   
+  }
+
+  stages {
+    stage('Clone Repository') {
+      steps {
+        git url: "${REPO_URL}", branch: 'main'
+      }
+    }
+
+    stage('Build Docker Image') {
+      steps {
+        script {
+          // Build with the correct site folder as context
+          docker.build("${IMAGE_NAME}", "./${SITE_FOLDER}")
+        }
+      }
+    }
+
+    stage('Push to DockerHub') {
+      steps {
+        withDockerRegistry([credentialsId: 'dockerhub-creds', url: '']) {
+          script {
+            docker.image("${IMAGE_NAME}").push()
+          }
+        }
+      }
+    }
+
+    stage('Deploy to Docker Swarm') {
+      steps {
+        sh '''
+        docker -H ${SWARM_MANAGER} service rm webapp || true
+
+        docker -H ${SWARM_MANAGER} service create \
+          --name webapp \
+          --replicas 3 \
+          --publish 80:80 \
+          --mount type=volume,source=mysite-data,target=/usr/local/apache2/htdocs \
+          ${DOCKERHUB_USER}/${IMAGE_NAME}:latest
+        '''
+      }
+    }
+  }
+
+  post {
+    success {
+      echo " Web service deployed successfully to Docker Swarm"
+    }
+    failure {
+      echo " Deployment failed. Please review logs and swarm state."
+    }
+  }
+}
