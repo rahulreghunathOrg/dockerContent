@@ -5,7 +5,7 @@ pipeline {
     DOCKERHUB_USER = 'rahuldocker314'
     IMAGE_NAME     = 'mysite-image'
     FULL_IMAGE     = "${DOCKERHUB_USER}/${IMAGE_NAME}:latest"
-    SWARM_MANAGER  = 'tcp://18.227.46.132:2375'
+    DOCKER_SSH     = 'ssh://ubuntu@18.227.46.132'  // Replace with your actual user@IP
   }
 
   stages {
@@ -27,12 +27,12 @@ pipeline {
       }
     }
 
-    stage('Deploy to Docker Swarm') {
+    stage('Deploy to Docker Swarm (via SSH)') {
       steps {
         sh """
-        docker -H ${SWARM_MANAGER} service rm webapp || true
+        docker -H ${DOCKER_SSH} service rm webapp || true
 
-        docker -H ${SWARM_MANAGER} service create \
+        docker -H ${DOCKER_SSH} service create \
           --name webapp \
           --replicas 3 \
           --publish 80:80 \
@@ -45,10 +45,10 @@ pipeline {
 
   post {
     success {
-      echo "✅ Web service deployed successfully to Docker Swarm"
+      echo "✅ Web service deployed successfully to Docker Swarm via SSH"
     }
     failure {
-      echo "❌ Deployment failed. Please review logs and swarm state."
+      echo "❌ Deployment failed. Please review SSH connection and swarm state."
     }
   }
 }
