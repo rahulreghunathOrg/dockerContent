@@ -9,13 +9,6 @@ pipeline {
     SWARM_MANAGER  = 'tcp://18.227.46.132:2375'   
   }
 
-  stages {
-    stage('Clone Repository') {
-      steps {
-        git url: "${REPO_URL}", branch: 'main'
-      }
-    }
-
     stage('Build Docker Image') {
       steps {
         script {
